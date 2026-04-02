@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROBLOX STYLE v4</title>
+    <title>ROBLOX STYLE ULTIMATE</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script type="importmap">
     {
@@ -13,48 +13,41 @@
     }
     </script>
     <style>
-        :root { --vh: 1vh; }
         body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: 'Arial Black', sans-serif; 
-            user-select: none; 
-            touch-action: none; 
-            background: #393b3d;
-            height: 100dvh; /* スマホのバーを考慮した高さ */
+            margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; 
+            user-select: none; touch-action: none; background: #1a1a1a;
+            height: 100dvh;
         }
         canvas { display: block; width: 100%; height: 100%; }
         
-        /* ログイン画面 */
+        /* ログイン */
         #login-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; z-index: 2000; color: white; }
-        .login-card { background: #ffffff; color: #333; padding: 25px; border-radius: 15px; width: 80%; max-width: 300px; text-align: center; }
+        .login-card { background: #ffffff; color: #333; padding: 25px; border-radius: 15px; width: 85%; max-width: 300px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 18px; }
         button { width: 100%; padding: 15px; background: #00b06f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 5px #008a57; }
 
-        /* ゲームUIレイヤー */
+        /* ゲームUI */
         #ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 100; height: 100dvh; }
-        #online-list { position: absolute; top: env(safe-area-inset-top, 10px); right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; }
-        
-        /* ホットバー（少し上に配置） */
-        #hotbar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 20px) + 20px); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
-        .slot { width: 50px; height: 50px; background: rgba(255,255,255,0.9); border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .slot.active { border-color: #00b06f; background: #fff; transform: scale(1.1); }
+        #online-list { position: absolute; top: env(safe-area-inset-top, 10px); right: 15px; background: rgba(0,0,0,0.6); color: white; padding: 6px 15px; border-radius: 20px; font-size: 14px; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; }
 
-        /* モバイル操作（位置を微調整） */
-        #joystick-area { position: absolute; bottom: 80px; left: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; pointer-events: auto; }
+        /* ホットバー */
+        #hotbar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 20px) + 25px); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
+        .slot { width: 52px; height: 52px; background: rgba(255,255,255,0.9); border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: 0.1s; }
+        .slot.active { border-color: #00b06f; background: #fff; transform: scale(1.1); box-shadow: 0 0 15px rgba(0,176,111,0.4); }
+
+        /* コントローラー */
+        #joystick-area { position: absolute; bottom: 85px; left: 35px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; pointer-events: auto; }
         #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; }
-        #action-btns { position: absolute; bottom: 80px; right: 30px; display: none; flex-direction: column; gap: 15px; pointer-events: auto; }
-        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        
-        /* 中央のカーソル */
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; }
+        #action-btns { position: absolute; bottom: 85px; right: 35px; display: none; flex-direction: column; gap: 15px; pointer-events: auto; }
+        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
     <div class="login-card">
-        <h2 style="margin:0">Roblox Multi</h2>
+        <h2 style="margin:0">Roblox Craft</h2>
         <input type="text" id="username" placeholder="名前を入力" maxlength="10">
         <button onclick="joinGame()">PLAY</button>
     </div>
@@ -88,7 +81,7 @@
     const blockColors = { 1: 0x8B4513, 2: 0x00ffff, 3: 0xff4500 };
 
     window.joinGame = () => {
-        myName = document.getElementById('username').value || "Steve";
+        myName = document.getElementById('username').value || "Player";
         document.getElementById('login-screen').style.display = 'none';
         if('ontouchstart' in window) {
             document.getElementById('joystick-area').style.display = 'block';
@@ -110,20 +103,24 @@
         document.body.appendChild(renderer.domElement);
 
         scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-        const grid = new THREE.GridHelper(100, 100, 0x888888, 0x444444);
-        scene.add(grid);
+        
+        // 最初の地面を確実に生成
+        const floorGeo = new THREE.BoxGeometry(1, 1, 1);
+        const floorMat = new THREE.MeshLambertMaterial({color: 0x4d8a31});
+        for(let x=-10; x<10; x++) {
+            for(let z=-10; z<10; z++) {
+                const b = new THREE.Mesh(floorGeo, floorMat);
+                b.position.set(x, 0, z);
+                scene.add(b);
+                blocks.push(b);
+            }
+        }
         camera.position.set(0, 5, 10);
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     }
 
     function setupNet() {
         gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        world = gun.get('roblox-multi-v4');
+        world = gun.get('roblox-multi-v5');
         world.get('players').map().on((data, id) => {
             if(!data || id === myId) return;
             if(!players[id]) {
@@ -146,7 +143,7 @@
         if(sync) world.get('blocks').set({x, y, z, type, t:Date.now()});
     }
 
-    // --- 操作：マルチタッチ & 視点反転 ---
+    // --- 操作：上下反転（インバート） & マルチタッチ ---
     window.addEventListener('touchstart', (e) => {
         for(let i=0; i<e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -162,7 +159,8 @@
             const t = e.changedTouches[i];
             if(t.identifier === lookTouchId) {
                 lon -= (t.clientX - lastLX) * 0.3;
-                lat -= (t.clientY - lastLY) * 0.3; // 視点上下反転（リバース）
+                // 上下反転（インバート）設定: += に変更
+                lat += (t.clientY - lastLY) * 0.3; 
                 lat = Math.max(-85, Math.min(85, lat));
                 lastLX = t.clientX; lastLY = t.clientY;
             }
@@ -173,18 +171,14 @@
         for(let i=0; i<e.changedTouches.length; i++) {
             if(e.changedTouches[i].identifier === lookTouchId) lookTouchId = null;
             if(e.changedTouches[i].identifier === joyTouchId) {
-                joyTouchId = null;
-                moveFwd = 0; moveSide = 0;
+                joyTouchId = null; moveFwd = 0; moveSide = 0;
                 document.getElementById('stick').style.transform = 'translate(0,0)';
             }
         }
     });
 
     const stick = document.getElementById('stick');
-    document.getElementById('joystick-area').addEventListener('touchstart', (e) => {
-        joyTouchId = e.changedTouches[0].identifier;
-    });
-
+    document.getElementById('joystick-area').addEventListener('touchstart', (e) => { joyTouchId = e.changedTouches[0].identifier; });
     document.getElementById('joystick-area').addEventListener('touchmove', (e) => {
         const t = Array.from(e.touches).find(t => t.identifier === joyTouchId);
         if(!t) return;
@@ -199,11 +193,10 @@
     document.getElementById('btn-jump').ontouchstart = () => { if(camera.position.y <= 1.7) vY = 0.22; };
     document.getElementById('btn-place').ontouchstart = () => {
         const ray = new THREE.Raycaster();
-        // ここで正確に画面中央（0,0）を狙うように修正
         ray.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = ray.intersectObjects(blocks.length > 0 ? blocks : [new THREE.Mesh(new THREE.PlaneGeometry(100,100))]);
+        const hits = ray.intersectObjects(blocks);
         if(hits.length > 0) {
-            const p = hits[0].point.add(hits[0].face ? hits[0].face.normal.multiplyScalar(0.5) : new THREE.Vector3(0,1,0));
+            const p = hits[0].point.add(hits[0].face.normal.multiplyScalar(0.5));
             createBlock(Math.round(p.x), Math.round(p.y), Math.round(p.z), selectedType);
         }
     };
