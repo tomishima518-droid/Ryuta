@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ULTIMATE MULTICRAFT ONLINE</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.150.1/build/three.module.js"
+        }
+    }
+    </script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; background: #87CEEB; }
+        canvas { display: block; }
+        
+        /* UI */
+        #ui-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)); z-index: 1000; color: white; text-align: center; }
+        #hotbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(0,0,0,0.6); padding: 6px; border: 3px solid #333; border-radius: 4px; }
+        .slot { width: 45px; height: 45px; border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .slot.active { border-color: #fff; background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        
+        /* Stats & Logs */
+        #log { position: absolute; bottom: 85px; left: 15px; color: white; font-size: 12px; text-shadow: 1px 1px 2px #000; pointer-events: none; max-height: 100px; overflow: hidden; }
+        #online-count { position: absolute; top: 15px; left: 15px; color: #0f0; font-weight: bold; background: rgba(0,0,0,0.4); padding: 5px 10px; border-radius: 20px; }
+
+        /* Mobile Controls */
+        #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; }
+        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; }
+        #action-btns { position: absolute; bottom: 50px; right: 50px; display: none; flex-direction: column; gap: 15px; }
+        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 0 #333; }
+        .m-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; }
+    </style>
+</head>
+<body>
+
+<div id="ui-overlay">
+    <h1 style="font-size: 40px; text-shadow: 4px 4px #2ecc71;">ULTIMATE ONLINE</h1>
+    <p>世界中のプレイヤーと繋がるマイクラ風ワールド</p>
+    <input type="text" id="username" placeholder="プレイヤー名" maxlength="10" style="padding:15px; font-size:18px; border-radius:10px; border:none; margin-bottom:15px; width:200px;">
+    <button onclick="initGame()" style="padding:18px 50px; font-size:20px; background:#2ecc71; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; box-shadow:0 6px #27ae60;">スタート！</button>
+</div>
+
+<div id="online-count">ONLINE: 1</div>
+<div id="log"></div>
+<div id="crosshair"></div>
+
+<div id="hotbar">
+    <div class="slot active" data-id="1" style="background:#4d8a31;">草</div>
+    <div class="slot" data-id="2" style="background:#808080;">石</div>
+    <div class="slot" data-id="3" style="background:#8B4513;">木</div>
+    <div class="slot" data-id="4" style="background:#00ffff; color:#000;">D</div>
+    <div class="slot" data-id="5" style="background:#ff0000;">TNT</div>
+</div>
+
+<div id="joystick-zone"><div id="joystick-stick"></div></div>
+<div id="action-btns">
+    <div class="m-btn" id="btn-jump" style="background:#3498db;">JUMP</div>
+    <div class="m-btn" id="btn-place" style="background:#2ecc71;">PLACE</div>
+    <div class="m-btn" id="btn-break" style="background:#e74c3c;">BREAK</div>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    let scene, camera, renderer, gun, world, myName;
+    let myId = "id_" + Math.random().toString(36).substr(2, 7);
+    let players = {}, blocks = [], labels = {};
+    let selectedType = 1, moveFwd = 0, moveRight = 0, vY = 0;
+    let lon = 0, lat = 0;
+    
+    const blockData = {
+        1: { color: 0x4d8a31 }, 2: { color: 0x808080 },
+        3: { color: 0x8B4513 }, 4: { color: 0x00ffff }, 5: { color: 0xff0000 }
+    };
+
+    window.initGame = () => {
+        myName = document.getElementById('username').value || "Guest";
+        document.getElementById('ui-overlay').style.display = 'none';
+        if('ontouchstart' in window) {
+            document.getElementById('joystick-zone').style.display = 'block';
+            document.getElementById('action-btns').style.display = 'flex';
+        }
+        setupThree();
+        setupNetworking();
+        addLog(`ようこそ、${myName}さん！`);
+        animate();
+    };
+
+    function addLog(msg) {
+        const div = document.createElement('div');
+        div.textContent = `> ${msg}`;
+        const log = document.getElementById('log');
+        log.appendChild(div);
+        if(log.childNodes.length > 5) log.removeChild(log.firstChild);
+    }
+
+    function setupThree() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+        sun.position.set(5, 10, 7);
+        scene.add(sun);
+
+        // 床
+        for(let x=-10; x<10; x++) {
+            for(let z=-10; z<10; z++) addBlock(x, 0, z, 1, false);
+        }
+        camera.position.set(0, 2, 5);
+    }
+
+    function setupNetworking() {
+        gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        world = gun.get('ultra-craft-v2');
+
+        world.get('players').map().on((data, id) => {
+            if(!data || id === myId) return;
+            if(!players[id]) {
+                const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1, 4, 8), new THREE.MeshStandardMaterial({color: 0xff4444}));
+                scene.add(mesh);
+                players[id] = mesh;
+                addLog(`${data.name}が入室しました`);
+            }
+            players[id].position.copy(data.pos);
+        });
+
+        world.get('blocks').map().on((data, id) => {
+            if(data) {
+                if(data.remove) {
+                    const found = blocks.find(b => b.position.x == data.x && b.position.y == data.y && b.position.z == data.z);
+                    if(found) { scene.remove(found); blocks = blocks.filter(b => b !== found); }
+                } else {
+                    addBlock(data.x, data.y, data.z, data.type, false);
+                }
+            }
+        });
+    }
+
+    function addBlock(x, y, z, type, sync = true) {
+        if(blocks.some(b => b.position.x == x && b.position.y == y && b.position.z == z)) return;
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({color: blockData[type].color}));
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+        blocks.push(mesh);
+        if(sync) world.get('blocks').set({ x, y, z, type, id: Date.now() });
+    }
+
+    // --- 操作 ---
+    let isTouching = false, px, py;
+    document.addEventListener('touchstart', (e) => { if(e.touches[0].clientX > window.innerWidth/2) { isTouching = true; px = e.touches[0].clientX; py = e.touches[0].clientY; }});
+    document.addEventListener('touchmove', (e) => { if(!isTouching) return; const t = e.touches[0]; lon -= (t.clientX - px)*0.3; lat += (t.clientY - py)*0.3; lat = Math.max(-85, Math.min(85, lat)); px = t.clientX; py = t.clientY; });
+    document.addEventListener('touchend', () => isTouching = false);
+
+    const stick = document.getElementById('joystick-stick');
+    document.getElementById('joystick-zone').addEventListener('touchmove', (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const dx = e.touches[0].clientX - (r.left+60), dy = e.touches[0].clientY - (r.top+60);
+        const d = Math.min(Math.sqrt(dx*dx+dy*dy), 40);
+        const a = Math.atan2(dy, dx);
+        stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+        moveFwd = -Math.sin(a)*(d/40); moveRight = Math.cos(a)*(d/40);
+    });
+    document.getElementById('joystick-zone').addEventListener('touchend', () => { stick.style.transform = `translate(0,0)`; moveFwd = moveRight = 0; });
+
+    document.getElementById('btn-jump').ontouchstart = () => { if(camera.position.y <= 1.61) vY = 0.15; };
+    document.getElementById('btn-place').ontouchstart = () => {
+        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
+        const hits = ray.intersectObjects(blocks);
+        if(hits.length > 0) {
+            const p = hits[0].object.position.clone().add(hits[0].face.normal);
+            addBlock(Math.round(p.x), Math.round(p.y), Math.round(p.z), selectedType);
+        }
+    };
+    document.getElementById('btn-break').ontouchstart = () => {
+        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
+        const hits = ray.intersectObjects(blocks);
+        if(hits.length > 0 && hits[0].object.position.y > 0) {
+            const p = hits[0].object.position;
+            world.get('blocks').set({ x: p.x, y: p.y, z: p.z, remove: true, id: Date.now() });
+        }
+    };
+
+    document.querySelectorAll('.slot').forEach(s => s.onclick = () => {
+        document.querySelectorAll('.slot').forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+        selectedType = parseInt(s.dataset.id);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const phi = THREE.MathUtils.degToRad(90-lat), theta = THREE.MathUtils.degToRad(lon);
+        camera.lookAt(new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position));
+
+        const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+        const rgt = new THREE.Vector3().crossVectors(camera.up, fwd).negate();
+        camera.position.addScaledVector(fwd, moveFwd*0.12); camera.position.addScaledVector(rgt, moveRight*0.12);
+
+        vY -= 0.008; camera.position.y += vY;
+        if(camera.position.y < 1.6) { camera.position.y = 1.6; vY = 0; }
+        
+        if(world) world.get('players').get(myId).put({ pos: camera.position, name: myName });
+        document.getElementById('online-count').textContent = `ONLINE: ${Object.keys(players).length + 1}`;
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
