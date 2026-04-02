@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROBLOX PERSISTENT WORLD</title>
+    <title>ROBLOX ULTIMATE SYNC</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script type="importmap">
     {
@@ -35,7 +35,7 @@
 
 <div id="login-screen">
     <div class="login-card">
-        <h2 style="margin:0">Persistent World</h2>
+        <h2 style="margin:0">Ultimate Sync</h2>
         <input type="text" id="username" placeholder="名前を入力" maxlength="10">
         <button onclick="joinGame()">PLAY</button>
     </div>
@@ -64,13 +64,12 @@
     let myId = "u_" + Math.random().toString(36).substr(2, 7);
     let players = {}, blocks = {}, blockMeshes = [];
     let selectedType = 1, moveFwd = 0, moveSide = 0, vY = 0;
-    let lon = 0, lat = 0;
-    let joyTouchId = null, lookTouchId = null, lastLX, lastLY;
+    let lon = 0, lat = 0, joyTouchId = null, lookTouchId = null, lastLX, lastLY;
 
     const blockColors = { 1: 0x8B4513, 2: 0x00ffff, 3: 0xff4500 };
 
     window.joinGame = () => {
-        myName = document.getElementById('username').value || "Player";
+        myName = document.getElementById('username').value || "Guest";
         document.getElementById('login-screen').style.display = 'none';
         if('ontouchstart' in window) {
             document.getElementById('joystick-area').style.display = 'block';
@@ -91,68 +90,109 @@
         document.body.appendChild(renderer.domElement);
 
         scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-        
-        // 最初は「真っ白（グリッドのみ）」の世界
-        const grid = new THREE.GridHelper(200, 200, 0xffffff, 0x555555);
-        scene.add(grid);
-        
-        // 透明な当たり判定用の床（これがないとブロックが置けない）
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({visible: false}));
+        scene.add(new THREE.GridHelper(500, 100, 0xffffff, 0x555555));
+
+        // 巨大な目に見えない床（奈落防止・設置用）
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({visible: false}));
         floor.rotation.x = -Math.PI / 2;
         floor.name = "ground";
         scene.add(floor);
         blockMeshes.push(floor);
 
-        camera.position.set(0, 5, 10);
+        // 初回スポーン位置
+        camera.position.set(0, 2, 5);
+    }
+
+    // ネームタグ作成関数
+    function createNameTag(name) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 128;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(name, 128, 60);
+        ctx.font = '30px Arial';
+        ctx.fillText('0m', 128, 100);
+        const tex = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
+        sprite.scale.set(2, 1, 1);
+        sprite.position.y = 1.5;
+        return sprite;
     }
 
     function setupNet() {
         gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        world = gun.get('roblox-final-v1'); // サーバー名
+        world = gun.get('roblox-final-sync-v2');
 
-        // プレイヤー同期
+        // プレイヤーの動きを同期
         world.get('players').map().on((data, id) => {
             if(!data || id === myId) return;
             if(!players[id]) {
-                players[id] = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x3498db}));
-                scene.add(players[id]);
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x3498db}));
+                const tag = createNameTag(data.name);
+                group.add(body); group.add(tag);
+                scene.add(group);
+                players[id] = { obj: group, tag: tag, canvas: tag.material.map.image };
             }
-            players[id].position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
+            players[id].obj.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
+            
+            // 距離更新
+            const dist = Math.floor(camera.position.distanceTo(players[id].obj.position));
+            const ctx = players[id].canvas.getContext('2d');
+            ctx.clearRect(0,0,256,128);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,256,128);
+            ctx.fillStyle = 'white'; ctx.textAlign = 'center';
+            ctx.font = 'bold 40px Arial'; ctx.fillText(data.name, 128, 60);
+            ctx.font = '30px Arial'; ctx.fillText(dist + 'm', 128, 100);
+            players[id].tag.material.map.needsUpdate = true;
         });
 
-        // ブロック同期（永続保存対応）
+        // ブロック同期
         world.get('blocks').map().on((data, key) => {
-            if(!data) {
-                // ブロック削除
-                if(blocks[key]) {
-                    scene.remove(blocks[key]);
-                    blockMeshes = blockMeshes.filter(m => m !== blocks[key]);
-                    delete blocks[key];
-                }
-            } else {
-                // ブロック作成
-                if(!blocks[key]) {
-                    const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: blockColors[data.type]}));
-                    b.position.set(data.x, data.y, data.z);
-                    scene.add(b);
-                    blocks[key] = b;
-                    blockMeshes.push(b);
-                }
+            if(!data && blocks[key]) {
+                scene.remove(blocks[key]);
+                blockMeshes = blockMeshes.filter(m => m !== blocks[key]);
+                delete blocks[key];
+            } else if(data && !blocks[key]) {
+                const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: blockColors[data.type]}));
+                b.position.set(data.x, data.y, data.z);
+                scene.add(b);
+                blocks[key] = b;
+                blockMeshes.push(b);
             }
         });
     }
 
-    function saveBlock(x, y, z, type) {
-        const key = `${x}_${y}_${z}`;
-        world.get('blocks').get(key).put({x, y, z, type});
+    // --- メインループ ---
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // 視点更新
+        const phi = THREE.MathUtils.degToRad(90-lat), theta = THREE.MathUtils.degToRad(lon);
+        camera.lookAt(new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position));
+        
+        // 移動
+        const f = new THREE.Vector3(); camera.getWorldDirection(f); f.y = 0; f.normalize();
+        const r = new THREE.Vector3().crossVectors(camera.up, f).negate();
+        camera.position.addScaledVector(f, moveFwd*0.18); camera.position.addScaledVector(r, moveSide*0.18);
+        
+        // 重力と奈落チェック
+        vY -= 0.012; camera.position.y += vY;
+        if(camera.position.y < 1.6) { camera.position.y = 1.6; vY = 0; }
+        if(camera.position.y < -15) { camera.position.set(0, 5, 0); vY = 0; } // 落下リスポーン
+
+        // 自分の位置を送信
+        if(world) world.get('players').get(myId).put({x:camera.position.x, y:camera.position.y, z:camera.position.z, name:myName});
+        
+        document.getElementById('online-list').innerText = `Online: ${Object.keys(players).length + 1}`;
+        renderer.render(scene, camera);
     }
 
-    function removeBlock(x, y, z) {
-        const key = `${x}_${y}_${z}`;
-        world.get('blocks').get(key).put(null);
-    }
-
-    // --- 操作：上下反転 & マルチタッチ ---
+    // --- 操作系 ---
     window.addEventListener('touchstart', (e) => {
         for(let i=0; i<e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -161,7 +201,6 @@
             }
         }
     });
-
     window.addEventListener('touchmove', (e) => {
         for(let i=0; i<e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -173,17 +212,14 @@
             }
         }
     });
-
     window.addEventListener('touchend', (e) => {
         for(let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === lookTouchId) lookTouchId = null;
-            if(e.changedTouches[i].identifier === joyTouchId) {
-                joyTouchId = null; moveFwd = 0; moveSide = 0;
-                document.getElementById('stick').style.transform = 'translate(0,0)';
-            }
+            const tid = e.changedTouches[i].identifier;
+            if(tid === lookTouchId) lookTouchId = null;
+            if(tid === joyTouchId) { joyTouchId = null; moveFwd = 0; moveSide = 0; document.getElementById('stick').style.transform = 'translate(0,0)'; }
         }
     });
-
+    const stick = document.getElementById('stick');
     document.getElementById('joystick-area').addEventListener('touchstart', (e) => { joyTouchId = e.changedTouches[0].identifier; });
     document.getElementById('joystick-area').addEventListener('touchmove', (e) => {
         const t = Array.from(e.touches).find(t => t.identifier === joyTouchId);
@@ -195,49 +231,30 @@
         stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
         moveFwd = -Math.sin(a)*(d/40); moveSide = Math.cos(a)*(d/40);
     });
-
     document.getElementById('btn-jump').ontouchstart = () => { if(camera.position.y <= 1.7) vY = 0.22; };
-    
     document.getElementById('btn-place').ontouchstart = () => {
-        const ray = new THREE.Raycaster();
-        ray.setFromCamera(new THREE.Vector2(0,0), camera);
+        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
         const hits = ray.intersectObjects(blockMeshes);
         if(hits.length > 0) {
             const p = hits[0].point.add(hits[0].face ? hits[0].face.normal.multiplyScalar(0.5) : new THREE.Vector3(0,0.5,0));
-            saveBlock(Math.round(p.x), Math.round(p.y), Math.round(p.z), selectedType);
+            const x = Math.round(p.x), y = Math.round(p.y), z = Math.round(p.z);
+            world.get('blocks').get(`${x}_${y}_${z}`).put({x, y, z, type:selectedType});
         }
     };
-
     document.getElementById('btn-break').ontouchstart = () => {
-        const ray = new THREE.Raycaster();
-        ray.setFromCamera(new THREE.Vector2(0,0), camera);
+        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
         const hits = ray.intersectObjects(blockMeshes);
         if(hits.length > 0 && hits[0].object.name !== "ground") {
             const p = hits[0].object.position;
-            removeBlock(p.x, p.y, p.z);
+            world.get('blocks').get(`${p.x}_${p.y}_${p.z}`).put(null);
         }
     };
-
     document.querySelectorAll('.slot').forEach(s => s.onclick = (e) => {
         e.stopPropagation();
         document.querySelectorAll('.slot').forEach(x => x.classList.remove('active'));
         s.classList.add('active');
         selectedType = parseInt(s.dataset.id);
     });
-
-    function animate() {
-        requestAnimationFrame(animate);
-        const phi = THREE.MathUtils.degToRad(90-lat), theta = THREE.MathUtils.degToRad(lon);
-        camera.lookAt(new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position));
-        const f = new THREE.Vector3(); camera.getWorldDirection(f); f.y = 0; f.normalize();
-        const r = new THREE.Vector3().crossVectors(camera.up, f).negate();
-        camera.position.addScaledVector(f, moveFwd*0.18); camera.position.addScaledVector(r, moveSide*0.18);
-        vY -= 0.012; camera.position.y += vY;
-        if(camera.position.y < 1.6) { camera.position.y = 1.6; vY = 0; }
-        if(world) world.get('players').get(myId).put({x:camera.position.x, y:camera.position.y, z:camera.position.z, name:myName});
-        document.getElementById('online-list').innerText = `Online: ${Object.keys(players).length + 1}`;
-        renderer.render(scene, camera);
-    }
 </script>
 </body>
 </html>
