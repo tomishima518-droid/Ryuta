@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROBLOX STYLE ULTIMATE</title>
+    <title>ROBLOX PERSISTENT WORLD</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script type="importmap">
     {
@@ -13,41 +13,29 @@
     }
     </script>
     <style>
-        body { 
-            margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; 
-            user-select: none; touch-action: none; background: #1a1a1a;
-            height: 100dvh;
-        }
+        body { margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; user-select: none; touch-action: none; background: #000; height: 100dvh; }
         canvas { display: block; width: 100%; height: 100%; }
-        
-        /* ログイン */
         #login-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; z-index: 2000; color: white; }
-        .login-card { background: #ffffff; color: #333; padding: 25px; border-radius: 15px; width: 85%; max-width: 300px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .login-card { background: #fff; color: #333; padding: 25px; border-radius: 15px; width: 85%; max-width: 300px; text-align: center; }
         input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 18px; }
-        button { width: 100%; padding: 15px; background: #00b06f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; box-shadow: 0 5px #008a57; }
-
-        /* ゲームUI */
+        button { width: 100%; padding: 15px; background: #00b06f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; }
         #ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 100; height: 100dvh; }
         #online-list { position: absolute; top: env(safe-area-inset-top, 10px); right: 15px; background: rgba(0,0,0,0.6); color: white; padding: 6px 15px; border-radius: 20px; font-size: 14px; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; }
-
-        /* ホットバー */
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); mix-blend-mode: difference; }
         #hotbar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 20px) + 25px); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
-        .slot { width: 52px; height: 52px; background: rgba(255,255,255,0.9); border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: 0.1s; }
-        .slot.active { border-color: #00b06f; background: #fff; transform: scale(1.1); box-shadow: 0 0 15px rgba(0,176,111,0.4); }
-
-        /* コントローラー */
+        .slot { width: 52px; height: 52px; background: rgba(255,255,255,0.9); border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .slot.active { border-color: #00b06f; background: #fff; transform: scale(1.1); }
         #joystick-area { position: absolute; bottom: 85px; left: 35px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; pointer-events: auto; }
         #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; }
         #action-btns { position: absolute; bottom: 85px; right: 35px; display: none; flex-direction: column; gap: 15px; pointer-events: auto; }
-        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
     <div class="login-card">
-        <h2 style="margin:0">Roblox Craft</h2>
+        <h2 style="margin:0">Persistent World</h2>
         <input type="text" id="username" placeholder="名前を入力" maxlength="10">
         <button onclick="joinGame()">PLAY</button>
     </div>
@@ -60,12 +48,12 @@
         <div class="slot active" data-id="1">🧱</div>
         <div class="slot" data-id="2">💎</div>
         <div class="slot" data-id="3">🔥</div>
-        <div class="slot" data-id="4">💩</div>
     </div>
     <div id="joystick-area"><div id="stick"></div></div>
     <div id="action-btns">
         <div class="m-btn" id="btn-jump">JUMP</div>
         <div class="m-btn" id="btn-place" style="background:#00b06f;">PLACE</div>
+        <div class="m-btn" id="btn-break" style="background:#e74c3c; width:60px; height:60px; font-size:10px;">BREAK</div>
     </div>
 </div>
 
@@ -74,11 +62,11 @@
 
     let scene, camera, renderer, gun, world, myName;
     let myId = "u_" + Math.random().toString(36).substr(2, 7);
-    let players = {}, blocks = [];
+    let players = {}, blocks = {}, blockMeshes = [];
     let selectedType = 1, moveFwd = 0, moveSide = 0, vY = 0;
     let lon = 0, lat = 0;
-
     let joyTouchId = null, lookTouchId = null, lastLX, lastLY;
+
     const blockColors = { 1: 0x8B4513, 2: 0x00ffff, 3: 0xff4500 };
 
     window.joinGame = () => {
@@ -97,7 +85,6 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -105,23 +92,25 @@
 
         scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
         
-        // 最初の地面を確実に生成
-        const floorGeo = new THREE.BoxGeometry(1, 1, 1);
-        const floorMat = new THREE.MeshLambertMaterial({color: 0x4d8a31});
-        for(let x=-10; x<10; x++) {
-            for(let z=-10; z<10; z++) {
-                const b = new THREE.Mesh(floorGeo, floorMat);
-                b.position.set(x, 0, z);
-                scene.add(b);
-                blocks.push(b);
-            }
-        }
+        // 最初は「真っ白（グリッドのみ）」の世界
+        const grid = new THREE.GridHelper(200, 200, 0xffffff, 0x555555);
+        scene.add(grid);
+        
+        // 透明な当たり判定用の床（これがないとブロックが置けない）
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({visible: false}));
+        floor.rotation.x = -Math.PI / 2;
+        floor.name = "ground";
+        scene.add(floor);
+        blockMeshes.push(floor);
+
         camera.position.set(0, 5, 10);
     }
 
     function setupNet() {
         gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        world = gun.get('roblox-multi-v5');
+        world = gun.get('roblox-final-v1'); // サーバー名
+
+        // プレイヤー同期
         world.get('players').map().on((data, id) => {
             if(!data || id === myId) return;
             if(!players[id]) {
@@ -130,27 +119,45 @@
             }
             players[id].position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
         });
-        world.get('blocks').map().on((data) => {
-            if(data) createBlock(data.x, data.y, data.z, data.type, false);
+
+        // ブロック同期（永続保存対応）
+        world.get('blocks').map().on((data, key) => {
+            if(!data) {
+                // ブロック削除
+                if(blocks[key]) {
+                    scene.remove(blocks[key]);
+                    blockMeshes = blockMeshes.filter(m => m !== blocks[key]);
+                    delete blocks[key];
+                }
+            } else {
+                // ブロック作成
+                if(!blocks[key]) {
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: blockColors[data.type]}));
+                    b.position.set(data.x, data.y, data.z);
+                    scene.add(b);
+                    blocks[key] = b;
+                    blockMeshes.push(b);
+                }
+            }
         });
     }
 
-    function createBlock(x, y, z, type, sync=true) {
-        if(blocks.some(b => b.position.x == x && b.position.y == y && b.position.z == z)) return;
-        const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: blockColors[type]}));
-        b.position.set(x, y, z);
-        scene.add(b);
-        blocks.push(b);
-        if(sync) world.get('blocks').set({x, y, z, type, t:Date.now()});
+    function saveBlock(x, y, z, type) {
+        const key = `${x}_${y}_${z}`;
+        world.get('blocks').get(key).put({x, y, z, type});
     }
 
-    // --- 操作：上下反転（インバート） & マルチタッチ ---
+    function removeBlock(x, y, z) {
+        const key = `${x}_${y}_${z}`;
+        world.get('blocks').get(key).put(null);
+    }
+
+    // --- 操作：上下反転 & マルチタッチ ---
     window.addEventListener('touchstart', (e) => {
         for(let i=0; i<e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
             if(t.clientX > window.innerWidth/2 && lookTouchId === null) {
-                lookTouchId = t.identifier;
-                lastLX = t.clientX; lastLY = t.clientY;
+                lookTouchId = t.identifier; lastLX = t.clientX; lastLY = t.clientY;
             }
         }
     });
@@ -160,8 +167,7 @@
             const t = e.changedTouches[i];
             if(t.identifier === lookTouchId) {
                 lon -= (t.clientX - lastLX) * 0.3;
-                // 上下反転（インバート）設定: += に変更
-                lat += (t.clientY - lastLY) * 0.3; 
+                lat += (t.clientY - lastLY) * 0.3; // 上下反転
                 lat = Math.max(-85, Math.min(85, lat));
                 lastLX = t.clientX; lastLY = t.clientY;
             }
@@ -178,7 +184,6 @@
         }
     });
 
-    const stick = document.getElementById('stick');
     document.getElementById('joystick-area').addEventListener('touchstart', (e) => { joyTouchId = e.changedTouches[0].identifier; });
     document.getElementById('joystick-area').addEventListener('touchmove', (e) => {
         const t = Array.from(e.touches).find(t => t.identifier === joyTouchId);
@@ -192,13 +197,24 @@
     });
 
     document.getElementById('btn-jump').ontouchstart = () => { if(camera.position.y <= 1.7) vY = 0.22; };
+    
     document.getElementById('btn-place').ontouchstart = () => {
         const ray = new THREE.Raycaster();
         ray.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = ray.intersectObjects(blocks);
+        const hits = ray.intersectObjects(blockMeshes);
         if(hits.length > 0) {
-            const p = hits[0].point.add(hits[0].face.normal.multiplyScalar(0.5));
-            createBlock(Math.round(p.x), Math.round(p.y), Math.round(p.z), selectedType);
+            const p = hits[0].point.add(hits[0].face ? hits[0].face.normal.multiplyScalar(0.5) : new THREE.Vector3(0,0.5,0));
+            saveBlock(Math.round(p.x), Math.round(p.y), Math.round(p.z), selectedType);
+        }
+    };
+
+    document.getElementById('btn-break').ontouchstart = () => {
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(0,0), camera);
+        const hits = ray.intersectObjects(blockMeshes);
+        if(hits.length > 0 && hits[0].object.name !== "ground") {
+            const p = hits[0].object.position;
+            removeBlock(p.x, p.y, p.z);
         }
     };
 
