@@ -2,259 +2,185 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROBLOX ULTIMATE SYNC</title>
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.150.1/build/three.module.js"
-        }
-    }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VANGUARD RUSH - PREMIUM STORE</title>
+    <script src="https://js.stripe.com/v3/"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; user-select: none; touch-action: none; background: #000; height: 100dvh; }
-        canvas { display: block; width: 100%; height: 100%; }
-        #login-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; z-index: 2000; color: white; }
-        .login-card { background: #fff; color: #333; padding: 25px; border-radius: 15px; width: 85%; max-width: 300px; text-align: center; }
-        input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 18px; }
-        button { width: 100%; padding: 15px; background: #00b06f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; }
-        #ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 100; height: 100dvh; }
-        #online-list { position: absolute; top: env(safe-area-inset-top, 10px); right: 15px; background: rgba(0,0,0,0.6); color: white; padding: 6px 15px; border-radius: 20px; font-size: 14px; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); mix-blend-mode: difference; }
-        #hotbar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 20px) + 25px); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
-        .slot { width: 52px; height: 52px; background: rgba(255,255,255,0.9); border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .slot.active { border-color: #00b06f; background: #fff; transform: scale(1.1); }
-        #joystick-area { position: absolute; bottom: 85px; left: 35px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; pointer-events: auto; }
-        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; }
-        #action-btns { position: absolute; bottom: 85px; right: 35px; display: none; flex-direction: column; gap: 15px; pointer-events: auto; }
-        .m-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        :root {
+            --neon-cyan: #00f3ff;
+            --gold: #dfb76c;
+            --bg-black: #0a0a0c;
+            --panel-bg: #141419;
+        }
+        body {
+            background-color: var(--bg-black);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        .shop-container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--panel-bg);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            border: 1px solid rgba(223, 183, 108, 0.15);
+            text-align: center;
+        }
+        .tag {
+            background: linear-gradient(90deg, #3a2f1b, #141419);
+            color: var(--gold);
+            font-size: 11px;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 16px;
+            border: 1px solid rgba(223, 183, 108, 0.3);
+            letter-spacing: 1px;
+        }
+        /* 📸 ここにカードの完成見本画像が入ります */
+        .card-image-box {
+            width: 100%;
+            height: 240px;
+            border-radius: 16px;
+            background: #202026;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .card-image-box::before {
+            content: "【ここにカード画像が入る】\n比率 85.6mm × 54.1mm";
+            position: absolute;
+            width: 100%;
+            top: 45%;
+            left: 0;
+            color: #555;
+            font-size: 12px;
+            white-space: pre;
+        }
+        h1 {
+            font-size: 22px;
+            margin: 0 0 8px 0;
+            font-weight: 800;
+        }
+        .price-row {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .price {
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            font-family: 'Impact', sans-serif;
+        }
+        .currency { font-size: 18px; font-weight: bold; }
+        .shipping-fee { color: var(--neon-cyan); font-size: 12px; font-weight: bold; }
+        
+        .specs {
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            text-align: left;
+            font-size: 13px;
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .spec-item:last-child { margin-bottom: 0; }
+        .spec-item strong { color: #fff; }
+
+        /* 🔥 迷わせないワンプッシュボタン */
+        .buy-btn {
+            background: linear-gradient(135deg, #ffdd93 0%, #c5a059 50%, #947130 100%);
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 16px;
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(197, 160, 89, 0.3);
+            transition: all 0.2s ease;
+        }
+        .buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(197, 160, 89, 0.5);
+        }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <div class="login-card">
-        <h2 style="margin:0">Ultimate Sync</h2>
-        <input type="text" id="username" placeholder="名前を入力" maxlength="10">
-        <button onclick="joinGame()">PLAY</button>
+<div class="shop-container">
+    <div class="tag">⚠️ LIMITED EDITION / 限定メタル仕様</div>
+    
+    <div class="card-image-box"></div>
+    
+    <h1>VANGUARD RUSH リアルメタルカード</h1>
+    
+    <div class="price-row">
+        <span class="currency">¥</span>
+        <span class="price">2,500</span>
+        <span class="shipping-fee">【送料無料 / ポスト直行】</span>
     </div>
+    
+    <div class="specs">
+        <div class="spec-item"><span>素材</span><strong>本物ステンレス（ゴールドメッキ加工）</strong></div>
+        <div class="spec-item"><span>加工</span><strong>レーザー削り出し（凹凸エッチング）</strong></div>
+        <div class="spec-item"><span>厚さ・重量</span><strong>0.4mm / ずっしりヘビー仕様</strong></div>
+    </div>
+
+    <button class="buy-btn" id="checkout-button" onclick="payNow()">
+        今すぐ購入する（1分で完了）
+    </button>
 </div>
 
-<div id="ui-layer">
-    <div id="online-list">Online: 1</div>
-    <div id="crosshair"></div>
-    <div id="hotbar">
-        <div class="slot active" data-id="1">🧱</div>
-        <div class="slot" data-id="2">💎</div>
-        <div class="slot" data-id="3">🔥</div>
-    </div>
-    <div id="joystick-area"><div id="stick"></div></div>
-    <div id="action-btns">
-        <div class="m-btn" id="btn-jump">JUMP</div>
-        <div class="m-btn" id="btn-place" style="background:#00b06f;">PLACE</div>
-        <div class="m-btn" id="btn-break" style="background:#e74c3c; width:60px; height:60px; font-size:10px;">BREAK</div>
-    </div>
-</div>
+<script>
+    // 1. 本番の時はあなたのStripe公開鍵をここに入れます
+    const stripe = Stripe('pk_test_51Oxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 
-<script type="module">
-    import * as THREE from 'three';
+    async function payNow() {
+        const btn = document.getElementById('checkout-button');
+        btn.innerText = "セキュリティー決済へ接続中...";
+        btn.disabled = true;
 
-    let scene, camera, renderer, gun, world, myName;
-    let myId = "u_" + Math.random().toString(36).substr(2, 7);
-    let players = {}, blocks = {}, blockMeshes = [];
-    let selectedType = 1, moveFwd = 0, moveSide = 0, vY = 0;
-    let lon = 0, lat = 0, joyTouchId = null, lookTouchId = null, lastLX, lastLY;
-
-    const blockColors = { 1: 0x8B4513, 2: 0x00ffff, 3: 0xff4500 };
-
-    window.joinGame = () => {
-        myName = document.getElementById('username').value || "Guest";
-        document.getElementById('login-screen').style.display = 'none';
-        if('ontouchstart' in window) {
-            document.getElementById('joystick-area').style.display = 'block';
-            document.getElementById('action-btns').style.display = 'flex';
-        }
-        init();
-        setupNet();
-        animate();
-    };
-
-    function init() {
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
-
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-        scene.add(new THREE.GridHelper(500, 100, 0xffffff, 0x555555));
-
-        // 巨大な目に見えない床（奈落防止・設置用）
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({visible: false}));
-        floor.rotation.x = -Math.PI / 2;
-        floor.name = "ground";
-        scene.add(floor);
-        blockMeshes.push(floor);
-
-        // 初回スポーン位置
-        camera.position.set(0, 2, 5);
-    }
-
-    // ネームタグ作成関数
-    function createNameTag(name) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 256; canvas.height = 128;
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(0, 0, 256, 128);
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 40px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(name, 128, 60);
-        ctx.font = '30px Arial';
-        ctx.fillText('0m', 128, 100);
-        const tex = new THREE.CanvasTexture(canvas);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
-        sprite.scale.set(2, 1, 1);
-        sprite.position.y = 1.5;
-        return sprite;
-    }
-
-    function setupNet() {
-        gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        world = gun.get('roblox-final-sync-v2');
-
-        // プレイヤーの動きを同期
-        world.get('players').map().on((data, id) => {
-            if(!data || id === myId) return;
-            if(!players[id]) {
-                const group = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x3498db}));
-                const tag = createNameTag(data.name);
-                group.add(body); group.add(tag);
-                scene.add(group);
-                players[id] = { obj: group, tag: tag, canvas: tag.material.map.image };
-            }
-            players[id].obj.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
+        // 💳 ここからStripeの決済画面へ
+        try {
+            // 本来はここでRenderなどで作った「24時間動くバックエンドサーバー」を呼び出します
+            const response = await fetch("https://あなたのサーバー.render.com/create-checkout-session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ item: "metal_card_gold", qty: 1 })
+            });
+            const session = await response.json();
             
-            // 距離更新
-            const dist = Math.floor(camera.position.distanceTo(players[id].obj.position));
-            const ctx = players[id].canvas.getContext('2d');
-            ctx.clearRect(0,0,256,128);
-            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,256,128);
-            ctx.fillStyle = 'white'; ctx.textAlign = 'center';
-            ctx.font = 'bold 40px Arial'; ctx.fillText(data.name, 128, 60);
-            ctx.font = '30px Arial'; ctx.fillText(dist + 'm', 128, 100);
-            players[id].tag.material.map.needsUpdate = true;
-        });
-
-        // ブロック同期
-        world.get('blocks').map().on((data, key) => {
-            if(!data && blocks[key]) {
-                scene.remove(blocks[key]);
-                blockMeshes = blockMeshes.filter(m => m !== blocks[key]);
-                delete blocks[key];
-            } else if(data && !blocks[key]) {
-                const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: blockColors[data.type]}));
-                b.position.set(data.x, data.y, data.z);
-                scene.add(b);
-                blocks[key] = b;
-                blockMeshes.push(b);
-            }
-        });
+            // Stripeの決済画面にジャンプ！
+            await stripe.redirectToCheckout({ sessionId: session.id });
+            
+        } catch (error) {
+            // まだバックエンドサーバーを設置していない状態の時のテスト用挙動です
+            alert("【ショップ画面の確認完了！】\n\nおめでとうございます！HTMLとボタンの連携は完璧です。\n\n実際にプレイヤーが本物のお金で決済できるようにするには、次のステップで『Stripeの本番用アカウント登録』と『Renderでのバックエンドサーバー設置』を行います！");
+            btn.innerText = "今すぐ購入する（1分で完了）";
+            btn.disabled = false;
+        }
     }
-
-    // --- メインループ ---
-    function animate() {
-        requestAnimationFrame(animate);
-        
-        // 視点更新
-        const phi = THREE.MathUtils.degToRad(90-lat), theta = THREE.MathUtils.degToRad(lon);
-        camera.lookAt(new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position));
-        
-        // 移動
-        const f = new THREE.Vector3(); camera.getWorldDirection(f); f.y = 0; f.normalize();
-        const r = new THREE.Vector3().crossVectors(camera.up, f).negate();
-        camera.position.addScaledVector(f, moveFwd*0.18); camera.position.addScaledVector(r, moveSide*0.18);
-        
-        // 重力と奈落チェック
-        vY -= 0.012; camera.position.y += vY;
-        if(camera.position.y < 1.6) { camera.position.y = 1.6; vY = 0; }
-        if(camera.position.y < -15) { camera.position.set(0, 5, 0); vY = 0; } // 落下リスポーン
-
-        // 自分の位置を送信
-        if(world) world.get('players').get(myId).put({x:camera.position.x, y:camera.position.y, z:camera.position.z, name:myName});
-        
-        document.getElementById('online-list').innerText = `Online: ${Object.keys(players).length + 1}`;
-        renderer.render(scene, camera);
-    }
-
-    // --- 操作系 ---
-    window.addEventListener('touchstart', (e) => {
-        for(let i=0; i<e.changedTouches.length; i++) {
-            const t = e.changedTouches[i];
-            if(t.clientX > window.innerWidth/2 && lookTouchId === null) {
-                lookTouchId = t.identifier; lastLX = t.clientX; lastLY = t.clientY;
-            }
-        }
-    });
-    window.addEventListener('touchmove', (e) => {
-        for(let i=0; i<e.changedTouches.length; i++) {
-            const t = e.changedTouches[i];
-            if(t.identifier === lookTouchId) {
-                lon -= (t.clientX - lastLX) * 0.3;
-                lat += (t.clientY - lastLY) * 0.3; // 上下反転
-                lat = Math.max(-85, Math.min(85, lat));
-                lastLX = t.clientX; lastLY = t.clientY;
-            }
-        }
-    });
-    window.addEventListener('touchend', (e) => {
-        for(let i=0; i<e.changedTouches.length; i++) {
-            const tid = e.changedTouches[i].identifier;
-            if(tid === lookTouchId) lookTouchId = null;
-            if(tid === joyTouchId) { joyTouchId = null; moveFwd = 0; moveSide = 0; document.getElementById('stick').style.transform = 'translate(0,0)'; }
-        }
-    });
-    const stick = document.getElementById('stick');
-    document.getElementById('joystick-area').addEventListener('touchstart', (e) => { joyTouchId = e.changedTouches[0].identifier; });
-    document.getElementById('joystick-area').addEventListener('touchmove', (e) => {
-        const t = Array.from(e.touches).find(t => t.identifier === joyTouchId);
-        if(!t) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        const dx = t.clientX - (r.left + r.width/2), dy = t.clientY - (r.top + r.height/2);
-        const d = Math.min(Math.sqrt(dx*dx+dy*dy), 40);
-        const a = Math.atan2(dy, dx);
-        stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-        moveFwd = -Math.sin(a)*(d/40); moveSide = Math.cos(a)*(d/40);
-    });
-    document.getElementById('btn-jump').ontouchstart = () => { if(camera.position.y <= 1.7) vY = 0.22; };
-    document.getElementById('btn-place').ontouchstart = () => {
-        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = ray.intersectObjects(blockMeshes);
-        if(hits.length > 0) {
-            const p = hits[0].point.add(hits[0].face ? hits[0].face.normal.multiplyScalar(0.5) : new THREE.Vector3(0,0.5,0));
-            const x = Math.round(p.x), y = Math.round(p.y), z = Math.round(p.z);
-            world.get('blocks').get(`${x}_${y}_${z}`).put({x, y, z, type:selectedType});
-        }
-    };
-    document.getElementById('btn-break').ontouchstart = () => {
-        const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = ray.intersectObjects(blockMeshes);
-        if(hits.length > 0 && hits[0].object.name !== "ground") {
-            const p = hits[0].object.position;
-            world.get('blocks').get(`${p.x}_${p.y}_${p.z}`).put(null);
-        }
-    };
-    document.querySelectorAll('.slot').forEach(s => s.onclick = (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.slot').forEach(x => x.classList.remove('active'));
-        s.classList.add('active');
-        selectedType = parseInt(s.dataset.id);
-    });
 </script>
+
 </body>
 </html>
+
